@@ -8,20 +8,22 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ExpandableListAdapter;
+import android.widget.ExpandableListView;
 import android.widget.ListView;
 
-import org.apache.commons.io.FileUtils;
+import com.codepath.simpletodo.adaptor.ItemAdapter;
+import com.codepath.simpletodo.model.Item;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    ArrayList<String> items;
-    ArrayAdapter<String> itemsAdapter;
+    List<Item> items;
+    ItemAdapter itemsAdapter;
     ListView lvItems;
+    ExpandableListView elvUrgencies;
+    ExpandableListAdapter urgencyAdaptor;
     private static final int REQUEST_ID_EDIT = 100;
 
     @Override
@@ -34,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         lvItems = (ListView)findViewById(R.id.lvItems);
         readItems();
-        itemsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, items);
+        itemsAdapter = new ItemAdapter(this, items);
         lvItems.setAdapter(itemsAdapter);
         setupListViewListener();
     }
@@ -42,9 +44,10 @@ public class MainActivity extends AppCompatActivity {
     public void onAddItem(View v) {
         EditText etNewItem = (EditText) findViewById(R.id.etNewItem);
         String itemText = etNewItem.getText().toString();
-        itemsAdapter.add(itemText);
+        Item newItem = new Item(itemText);
+        newItem.save();
+        itemsAdapter.add(newItem);
         etNewItem.setText("");
-        writeItems();
     }
 
     public void setupListViewListener() {
@@ -52,9 +55,10 @@ public class MainActivity extends AppCompatActivity {
                 new AdapterView.OnItemLongClickListener() {
                     @Override
                     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                        Item itemRemoved = items.get(position);
+                        itemRemoved.delete();
                         items.remove(position);
                         itemsAdapter.notifyDataSetChanged();
-                        writeItems();
                         return true;
                     }
                 }
@@ -64,8 +68,8 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         Intent editIntend = new Intent(MainActivity.this, EditItemActivity.class);
-                        editIntend.putExtra("position", position);
-                        editIntend.putExtra("item", items.get(position));
+                        editIntend.putExtra("pos", position);
+                        editIntend.putExtra("desc", items.get(position).description);
                         startActivityForResult(editIntend, REQUEST_ID_EDIT);
                     }
                 }
@@ -75,17 +79,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(resultCode == RESULT_OK && requestCode == REQUEST_ID_EDIT) {
-            int position = data.getExtras().getInt("position", -1);
-            String item = data.getExtras().getString("item");
+            int position = data.getExtras().getInt("pos", -1);
+            String desc = data.getExtras().getString("desc");
 
             if(position >= 0 && position < items.size()) {
-                items.set(position, item);
+                Item item = items.get(position);
+                item.description = desc;
+                item.save();
                 itemsAdapter.notifyDataSetChanged();
-                writeItems();
             }
         }
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -110,22 +114,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readItems() {
-        File filesDir = getFilesDir();
-        File todoFile = new File(filesDir,"todo.txt");
-        try {
-            items = new ArrayList<>(FileUtils.readLines(todoFile));
-        } catch(IOException e) {
-            items = new ArrayList<>();
-        }
-    }
-
-    private void writeItems() {
-        File filesDir = getFilesDir();
-        File todoFile = new File(filesDir, "todo.txt");
-        try {
-            FileUtils.writeLines(todoFile, items);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        items = Item.getAll();
     }
 }

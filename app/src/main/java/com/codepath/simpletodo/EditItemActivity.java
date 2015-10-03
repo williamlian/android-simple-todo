@@ -19,8 +19,8 @@ public class EditItemActivity extends AppCompatActivity {
         toolbar.setTitle("Edit Item");
         setSupportActionBar(toolbar);
 
-        position = getIntent().getExtras().getInt("position");
-        String item = getIntent().getExtras().getString("item");
+        position = getIntent().getExtras().getInt("pos");
+        String item = getIntent().getExtras().getString("desc");
 
         etSave = (EditText)findViewById(R.id.etSave);
         etSave.append(item);
@@ -28,8 +28,8 @@ public class EditItemActivity extends AppCompatActivity {
 
     public void onSaveItem(View v) {
         Intent data = new Intent();
-        data.putExtra("position", position);
-        data.putExtra("item", etSave.getText().toString());
+        data.putExtra("pos", position);
+        data.putExtra("desc", etSave.getText().toString());
         setResult(RESULT_OK, data);
         finish();
     }
